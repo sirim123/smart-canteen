@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}My Orders{% endblock %}
+{% block content %}
+<div class="section-heading"><div><span class="eyebrow">ORDER HISTORY</span><h1>My orders</h1></div><a class="button secondary" href="{{ url_for('index') }}">Browse menu</a></div>
+{% if orders %}
+<div class="order-list">
+{% for order in orders %}
+  <article class="order-card">
+    <div class="order-head"><div><span class="muted">Order #{{ order._id|string|truncate(10, True, '') }}</span><h3>₹{{ order.total }}</h3></div><span class="status {{ order.status|lower|replace(' ', '-') }}">{{ order.status }}</span></div>
+    <ul>{% for item in order['items'] %}<li>{{ item.name }} × {{ item.quantity }} <span>₹{{ item.line_total }}</span></li>{% endfor %}</ul>
+    <p class="muted small">Placed: {{ order.created_at.strftime('%d %b %Y, %I:%M %p') if order.created_at else 'Recently' }}</p>
+  </article>
+{% endfor %}
+</div>
+{% else %}
+<div class="empty"><div class="empty-icon">🧾</div><h2>No orders yet</h2><p>Your placed orders will appear here.</p><a class="button primary" href="{{ url_for('index') }}">Explore menu</a></div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}CampusBite{% endblock %} | Smart Canteen</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="{{ url_for('index') }}"><span class="brand-icon">🍽️</span> CampusBite</a>
+  <nav>
+    <a href="{{ url_for('index') }}">Menu</a>
+    {% if logged_in_user %}
+      {% if logged_in_user.role == 'admin' %}
+        <a href="{{ url_for('admin_dashboard') }}">Admin</a>
+      {% else %}
+        <a href="{{ url_for('my_orders') }}">My Orders</a>
+      {% endif %}
+      <span class="nav-user">{{ logged_in_user.name }}</span>
+      <form class="inline-form" method="post" action="{{ url_for('logout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="nav-button" type="submit">Logout</button>
+      </form>
+    {% else %}
+      <a href="{{ url_for('login') }}">Login</a>
+      <a class="nav-cta" href="{{ url_for('register') }}">Sign up</a>
+    {% endif %}
+  </nav>
+</header>
+<main class="container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-list">
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+<footer>CampusBite · Cloud-powered campus food ordering</footer>
+</body>
+</html>

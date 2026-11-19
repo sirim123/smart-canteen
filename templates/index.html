@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Food Menu{% endblock %}
+{% block content %}
+<section class="hero">
+  <div>
+    <span class="eyebrow">YOUR CAMPUS, YOUR FOOD</span>
+    <h1>Good food.<br><span>Zero queue.</span></h1>
+    <p>Choose your favourites, set quantities and place one order.</p>
+    {% if not logged_in_user %}<a class="button primary" href="{{ url_for('register') }}">Get started</a>{% endif %}
+  </div>
+  <div class="hero-art">🥗<span>🍔</span><b>☕</b></div>
+</section>
+
+<div class="section-heading">
+  <div><span class="eyebrow">MADE FRESH ON CAMPUS</span><h2>Today's menu</h2></div>
+  <span class="muted">{{ items|length }} items available</span>
+</div>
+
+{% if not items %}
+  <div class="empty">No menu items are currently available.</div>
+{% else %}
+<form method="post" action="{{ url_for('place_order') }}" id="order-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="menu-grid">
+    {% for item in items %}
+    <article class="food-card">
+      <div class="food-art">{{ item.emoji|default('🍽️') }}</div>
+      <div class="food-content">
+        <span class="category">{{ item.category }}</span>
+        <h3>{{ item.name }}</h3>
+        <p>{{ item.description }}</p>
+        <div class="food-bottom">
+          <strong>₹{{ item.price }}</strong>
+          {% if logged_in_user and logged_in_user.role == 'student' %}
+            <label class="select-item">
+              <input class="item-check" type="checkbox" name="item_id"
+                     value="{{ item._id }}" data-price="{{ item.price }}"
+                     data-name="{{ item.name }}">
+              Select
+            </label>
+          {% elif not logged_in_user %}
+            <a class="small-link" href="{{ url_for('login') }}">Login to order</a>
+          {% endif %}
+        </div>
+
+        {% if logged_in_user and logged_in_user.role == 'student' %}
+        <div class="quantity-row" hidden>
+          <label>Quantity</label>
+          <div class="quantity-controls">
+            <button type="button" class="qty-minus" aria-label="Decrease quantity">−</button>
+            <input class="qty-input" type="number" name="quantity" min="1" max="20"
+                   value="1" disabled aria-label="Quantity for {{ item.name }}">
+            <button type="button" class="qty-plus" aria-label="Increase quantity">+</button>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+
+  {% if logged_in_user and logged_in_user.role == 'student' %}
+  <section class="cart-summary" id="cart-summary" aria-live="polite">
+    <div>
+      <strong>Your order</strong>
+      <p><span id="cart-count">0</span> items selected</p>
+    </div>
+    <div class="cart-total">Total: ₹<span id="cart-total">0</span></div>
+    <button class="button primary" id="place-order" type="submit" disabled>
+      Place order →
+    </button>
+  </section>
+  {% endif %}
+</form>
+{% endif %}
+
+{% if logged_in_user and logged_in_user.role == 'student' %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("order-form");
+  if (!form) return;
+
+  const checks = [...form.querySelectorAll(".item-check")];
+  const countEl = document.getElementById("cart-count");
+  const totalEl = document.getElementById("cart-total");
+  const submitButton = document.getElementById("place-order");
+
+  function updateCart() {
+    let count = 0;
+    let total = 0;
+
+    checks.forEach(check => {
+      const card = check.closest(".food-card");
+      const quantityRow = card.querySelector(".quantity-row");
+      const quantityInput = card.querySelector(".qty-input");
+
+      quantityRow.hidden = !check.checked;
+      quantityInput.disabled = !check.checked;
+
+      if (check.checked) {
+        const quantity = Math.max(1, Math.min(20, Number(quantityInput.value) || 1));
+        quantityInput.value = quantity;
+        count += quantity;
+        total += Number(check.dataset.price) * quantity;
+      }
+    });
+
+    countEl.textContent = count;
+    totalEl.textContent = total;
+    submitButton.disabled = count === 0;
+  }
+
+  checks.forEach(check => {
+    const card = check.closest(".food-card");
+    const input = card.querySelector(".qty-input");
+
+    check.addEventListener("change", updateCart);
+
+    card.querySelector(".qty-minus").addEventListener("click", () => {
+      input.value = Math.max(1, Number(input.value || 1) - 1);
+      updateCart();
+    });
+
+    card.querySelector(".qty-plus").addEventListener("click", () => {
+      input.value = Math.min(20, Number(input.value || 1) + 1);
+      updateCart();
+    });
+
+    input.addEventListener("change", updateCart);
+  });
+
+  form.addEventListener("submit", event => {
+    if (!checks.some(check => check.checked)) {
+      event.preventDefault();
+      alert("Please select at least one food item.");
+    }
+  });
+
+  updateCart();
+});
+</script>
+
+<style>
+.select-item { display:flex; align-items:center; gap:7px; font-weight:600; cursor:pointer; }
+.select-item input { width:17px; height:17px; accent-color:#087653; }
+.quantity-row { margin-top:16px; align-items:center; justify-content:space-between; gap:12px; }
+.quantity-row:not([hidden]) { display:flex; }
+.quantity-controls { display:flex; align-items:center; gap:8px; }
+.quantity-controls button { width:32px; height:32px; border:1px solid #dce5df; border-radius:8px; background:#f5f8f6; font-size:20px; cursor:pointer; }
+.quantity-controls input { width:48px; height:32px; text-align:center; border:1px solid #dce5df; border-radius:8px; }
+.cart-summary { position:sticky; bottom:12px; z-index:5; margin-top:24px; padding:16px 20px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; background:#fff; border:1px solid #dce5df; border-radius:14px; box-shadow:0 5px 22px rgba(20,45,32,.12); }
+.cart-summary p { margin:4px 0 0; color:#718078; font-size:14px; }
+.cart-total { font-size:18px; font-weight:700; }
+.cart-summary button:disabled { opacity:.5; cursor:not-allowed; }
+@media (max-width:600px) { .cart-summary { align-items:stretch; } .cart-summary button { width:100%; } }
+</style>
+{% endif %}
+{% endblock %}

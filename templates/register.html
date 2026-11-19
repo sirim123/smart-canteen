@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Sign up{% endblock %}
+{% block content %}
+<div class="auth-wrap"><section class="auth-card">
+  <span class="eyebrow">JOIN CAMPUSBITE</span><h1>Create your account</h1>
+  <p class="muted">Student accounts can browse the menu and place orders.</p>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Full name<input type="text" name="name" maxlength="80" required autocomplete="name"></label>
+    <label>Email address<input type="email" name="email" required autocomplete="email"></label>
+    <label>Password <span class="muted">(at least 8 characters)</span><input type="password" name="password" minlength="8" required autocomplete="new-password"></label>
+    <button class="button primary full" type="submit">Create account</button>
+  </form>
+  <p class="muted center">Already registered? <a href="{{ url_for('login') }}">Login</a></p>
+</section></div>
+{% endblock %}
